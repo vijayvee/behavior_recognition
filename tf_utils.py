@@ -80,12 +80,13 @@ def get_preds_loss(ground_truth, input_mode='rgb',
         :param ground_truth: Tensor to hold ground truth
         :param input_mode: One of 'rgb','flow','two_stream'"""
     rgb_variable_map = {}
-    input_fr_rgb = tf.placeholder(tf.float32,
+    import ipdb; ipdb.set_trace()
+    input_480_640 = tf.placeholder(tf.uint8,
                                     shape=[batch_size,
                                            n_frames,
-                                           _IMAGE_SIZE, _IMAGE_SIZE,
-                                           3],
-                                    name='Input_Video_Placeholder')
+                                           480, 640, 3],
+                                    name='Input_480_640')
+    input_fr_rgb = resize_tf(input_480_640, IMAGE_SIZE=_IMAGE_SIZE)
     with tf.variable_scope('RGB'):
         #Building I3D for RGB-only input
         rgb_model = i3d.InceptionI3d(spatial_squeeze=True,
@@ -117,7 +118,7 @@ def get_preds_loss(ground_truth, input_mode='rgb',
     model_predictions = tf.nn.softmax(averaged_logits)
     top_classes = tf.argmax(model_predictions,axis=1)
     loss = get_loss(model_predictions, ground_truth)
-    return model_predictions, loss, top_classes, input_fr_rgb, rgb_saver
+    return model_predictions, loss, top_classes, input_480_640, rgb_saver
 
 def resize_tensor(videos):
     new_h, new_w = compute_scale(old_h=videos.shape[2],

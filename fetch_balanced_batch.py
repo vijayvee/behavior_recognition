@@ -98,6 +98,7 @@ def get_video_chunks(batch_video_inds,
         curr_chunk, _ = get_video_chunk_cv2(video_path,
                                          starting_frame,
                                          n_frames,
+                                         IMAGE_SIZE=224,
                                          normalize=False,
                                          dtype=np.uint8)
         if type(curr_chunk) == int:

@@ -4,6 +4,7 @@
 import numpy as np
 import tensorflow as tf
 from video_utils import *
+from utils import *
 import i3d
 import pickle
 from tqdm import tqdm
@@ -101,8 +102,6 @@ def train_batch_videos(n_train_batches, n_epochs,
         init_op = tf.group(tf.global_variables_initializer(),
                             tf.local_variables_initializer())
         sess.run(init_op)
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord,sess=sess)
         if input_mode=='rgb':
             n_iters = int((n_epochs*n_train_batches))
             saver.restore(sess, _CHECKPOINT_PATHS['rgb'])
@@ -110,6 +109,7 @@ def train_batch_videos(n_train_batches, n_epochs,
                 # video_frames_rgb, gt_actions = sess.run([videos,labels])
                 import ipdb; ipdb.set_trace()
                 video_frames_rgb, gt_actions = fetch_balanced_batch(behav2video)
+                video_frames_rgb = resize_tf(video_frames_rgb, IMAGE_SIZE=224)
                 if i==0:
                     print "Obtained frames and actions", \
                             video_frames_rgb.shape, gt_actions.shape
