@@ -23,54 +23,20 @@ CLASSES_KIN = [x.strip() for x in open(_LABEL_MAP_PATH)]
 CLASSES_MICE = ["drink", "eat", "groom", "hang", "sniff", "rear", "rest", "walk", "eathand"]
 video2label = {}
 
-# def resize_tensor(imgs, new_h, new_w):
-#     '''Function to resize a tensor of images to new_h, new_w
-#        while maintaining the aspect ratio constant'''
-#     old_h, old_w = imgs.shape[1], imgs.shape[2]
-#     assert old_w > old_h
-#     new_w =
-def get_b2v(subset,DATASET_NAME):
-    import pickle
-    b2v_pickle = 'pickles/Behavior2Video_%s_%s.p'%(
-                            DATASET_NAME,
-                            subset
-                            )   
-    behav2video = pickle.load(open(b2v_pickle))
-    return behav2video
-
-def compute_n_batch(H5_ROOT,
-                       batch_size,
-                       ratio=1.):
-    '''Function to compute number of samples
-       to load for writing tfrecords.
-       :param H5_ROOT: Root directory containing
-                       all h5 files
-       :param batch_size: Size of each minibatch
-       :param ratio: Proportion of dataset to be
-                     written as tfrecords'''
-    all_h5_files = glob.glob('%s/*.h5'%(H5_ROOT))
-    nLabels = 0
-    for h5_f in all_h5_files:
-        labels, counts = load_label(h5_f)
-        nLabels += len(labels)
-    #To write only a proportion of the dataset
-    nLabels = int(nLabels*ratio)
-    return nLabels/batch_size
-
-def load_label(label_path):
-    f = h5py.File(label_path)
-    labels = f['labels'].value
-    behav, labels_count = np.unique(labels, return_counts=True)
-    counts = {k:v for k,v in zip(behav,labels_count)}
-    return list(labels), counts
-
-def get_lists(subset,ratio):
-    labels = '{}/{}_labels_norest.pkl'.format(data_root,subset)
-    videos = '{}/{}_videos_norest.pkl'.format(data_root,subset)
-    ind_s, ind_e = 0, int(len(videos)*ratio)
-    subset_labels = pickle.load(open(labels))[ind_s:ind_e]
-    subset_videos = pickle.load(open(videos))[ind_s:ind_e]
-    return subset_videos, subset_labels
+def resize_tf(arr, IMAGE_SIZE=224):
+    old_h, old_w = tf.constant(arr.shape[0].value, dtype=tf.float32), tf.constant(arr.shape[1].value, dtype=tf.float32)
+    ratio = tf.divide(IMAGE_SIZE, old_w)
+    new_h, new_w = tf.multiply(old_h, ratio), tf.multiply(old_w,ratio)
+    new_h, new_w = tf.cast(new_h, tf.int32), tf.cast(new_w, tf.int32)
+    old_h = tf.cast(old_h, tf.int32)
+    pad_h = IMAGE_SIZE - new_h
+    pad_bottom, pad_top = pad_h // 2, pad_h - (pad_h//2)
+    arr_rsz = tf.image.resize_images(arr, (new_h, new_w),
+                                        align_corners=True)
+    arr_rsz = tf.cast(arr_rsz, tf.uint8)
+    padded = tf.pad(arr_rsz, tf.Variable([[pad_top, pad_bottom],[0,0],[0,0]]))
+    padded = tf.cast(padded, tf.uint8)
+    return padded
 
 def load_video_with_path_cv2(video_path, n_frames):
     """ Fuction to read a video, select a certain select number of

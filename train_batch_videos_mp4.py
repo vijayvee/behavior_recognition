@@ -110,6 +110,7 @@ def train_batch_videos(n_train_batches, n_epochs,
                 # video_frames_rgb, gt_actions = sess.run([videos,labels])
                 import ipdb; ipdb.set_trace()
                 video_frames_rgb, gt_actions = fetch_balanced_batch(behav2video)
+                video_frames_rgb = resize_tf(video_frames_rgb, IMAGE_SIZE=224)
                 if i==0:
                     print "Obtained frames and actions", \
                             video_frames_rgb.shape, gt_actions.shape
