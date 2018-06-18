@@ -1,0 +1,9 @@
+*.pyc
+*.p
+.DS_Store
+*.tfrecords
+data/*tfrecords
+*npy
+*gif
+ckpt_dir/*
+data/checkpoints/*
