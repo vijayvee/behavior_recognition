@@ -21,7 +21,7 @@ _IMAGE_SIZE = 224
 _NUM_CLASSES = 9
 
 H5_ROOT = '/media/data_cifs/mice/mice_data_2018/labels'
-_SAMPLE_VIDEO_FRAMES = 16
+_SAMPLE_VIDEO_FRAMES = 6
 _SAMPLE_PATHS = {
     'rgb': 'data/v_CricketShot_g04_c01_rgb.npy',
     'flow': 'data/v_CricketShot_g04_c01_flow.npy',
@@ -91,10 +91,11 @@ def train_batch_videos(n_train_batches, n_epochs,
         :param batch_size: Batch size for training"""
     correct_preds = 0.
     ground_truth = tf.placeholder(tf.float32,shape=[batch_size,num_classes])
-    predictions,loss,top_classes,input_video_ph,saver = get_preds_loss(ground_truth=ground_truth,
+    predictions,loss,top_classes,input_video_ph,input_video_ph_norm, saver = get_preds_loss(ground_truth=ground_truth,
                                                                         input_mode=input_mode,
                                                                         n_frames=n_frames,
-                                                                        batch_size=batch_size)
+                                                                        batch_size=batch_size,
+                                                                        dropout_keep_prob=0.8)
     behav2video = get_b2v(subset='train',DATASET_NAME='all_mice')
     saver_mice = tf.train.Saver()
     step = get_optimizer(loss,optim_key='adam',learning_rate=learning_rate)
@@ -107,21 +108,21 @@ def train_batch_videos(n_train_batches, n_epochs,
             saver.restore(sess, _CHECKPOINT_PATHS['rgb'])
             for i in tqdm(range(0,n_iters),desc='Training I3D on Kinetics train set...'):
                 # video_frames_rgb, gt_actions = sess.run([videos,labels])
-                video_frames_rgb, gt_actions = fetch_balanced_batch(behav2video)
+                video_frames_rgb, gt_actions = fetch_balanced_batch(behav2video,
+                                                                     batch_size=batch_size)
                 video_frames_rgb = video_frames_rgb.astype(np.float32)
                 gt_actions = np.array(gt_actions)
                 if i==0:
                     print "Obtained frames and actions", \
                             video_frames_rgb.shape, gt_actions.shape
                 gt_actions_oh = np.eye(num_classes)[gt_actions]
-                curr_loss,top_class_batch,_ = sess.run([loss,
-                                                        top_classes,
-                                                        step],
-                                                        feed_dict = {input_video_ph:
+                curr_loss,top_class_batch,_= sess.run([loss,
+                                                       top_classes,
+                                                       step],
+                                                    feed_dict = {input_video_ph:
                                                                       video_frames_rgb,
                                                                      ground_truth:
                                                                       gt_actions_oh})
-
                 correct_preds += list(top_class_batch==gt_actions).count(True)
                 train_acc = round(correct_preds/float((i+1)*batch_size),3)
                 if i%print_every==0:
@@ -143,11 +144,11 @@ if __name__=="__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
     print "Working on GPU %s"%(os.environ["CUDA_VISIBLE_DEVICES"])
     n_batches = compute_n_batch(H5_ROOT,
-                                  16,
+                                  6,
                                   ratio=0.5)
     best_val_accuracy = train_batch_videos(n_train_batches=n_batches,
                                             n_epochs=10,# video2label=video2label,
                                             #tfrecords_filename=sys.argv[2],
-                                            batch_size=16,
+                                            batch_size=6,
                                             #val_tfrecords=None,
                                             learning_rate=1e-4)

@@ -80,13 +80,16 @@ def get_preds_loss(ground_truth, input_mode='rgb',
         :param ground_truth: Tensor to hold ground truth
         :param input_mode: One of 'rgb','flow','two_stream'"""
     rgb_variable_map = {}
-    input_fr_rgb = tf.placeholder(tf.float32,
+    input_fr_rgb_unnorm = tf.placeholder(tf.float32,
                                     shape=[batch_size,
                                            n_frames,
                                            _IMAGE_SIZE, 
                                            _IMAGE_SIZE, 
                                            3],
-                                    name='Input_480_640')
+                                    name='Input_RGB')
+    #Inception was trained on videos in range [-1,1]
+    input_fr_rgb = tf.subtract(tf.divide(input_fr_rgb_unnorm,127.5),
+                                tf.constant(1.,dtype=tf.float32))
     with tf.variable_scope('RGB'):
         #Building I3D for RGB-only input
         rgb_model = i3d.InceptionI3d(spatial_squeeze=True,
@@ -118,7 +121,7 @@ def get_preds_loss(ground_truth, input_mode='rgb',
     model_predictions = tf.nn.softmax(averaged_logits)
     top_classes = tf.argmax(model_predictions,axis=1)
     loss = get_loss(model_predictions, ground_truth)
-    return model_predictions, loss, top_classes, input_fr_rgb, rgb_saver
+    return model_predictions, loss, top_classes, input_fr_rgb_unnorm, input_fr_rgb, rgb_saver
 
 def resize_tensor(videos):
     new_h, new_w = compute_scale(old_h=videos.shape[2],
