@@ -3,6 +3,7 @@ import glob
 import tensorflow as tf
 import numpy as np
 import sys
+from utils import *
 import os
 from tqdm import tqdm
 from tf_utils import *
@@ -18,8 +19,9 @@ OUTPUT_PATH = sys.argv[3]
 RATIO = float(sys.argv[4])
 currTime = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
 tfr_path = OUTPUT_PATH.split('/')
-tfr_name = '%s_%s_%s'%(currTime,
+tfr_name = '%s_%s_%s_%s_%s'%(currTime,
                         str(RATIO),
+                        SUBSET, DATASET_NAME,
                         tfr_path[-1])
 OUTPUT_PATH = '/'.join(tfr_path[:-1] + [tfr_name])
 print('Writing tfrecords:', OUTPUT_PATH)
@@ -58,6 +60,7 @@ def write_tfrecords(subset='train',
                     desc='Writing tf records..'):
         # Load the video
         video_chunks, labels = fetch_balanced_batch(behav2video)
+        labels = [L_POSSIBLE_BEHAVIORS[l] for l in labels]
         for behav in labels:
             counts[behav] += 1
         #Convert labels to discrete category indices

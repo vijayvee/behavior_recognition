@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import glob
 from time import sleep
+import tensorflow as tf
 import h5py
 
 """Script for video related utilities"""
@@ -24,7 +25,8 @@ CLASSES_MICE = ["drink", "eat", "groom", "hang", "sniff", "rear", "rest", "walk"
 video2label = {}
 
 def resize_tf(arr, IMAGE_SIZE=224):
-    old_h, old_w = tf.constant(arr.shape[0].value, dtype=tf.float32), tf.constant(arr.shape[1].value, dtype=tf.float32)
+    old_h, old_w = (tf.constant(arr.shape[2].value, dtype=tf.float32),
+                    tf.constant(arr.shape[3].value, dtype=tf.float32))
     ratio = tf.divide(IMAGE_SIZE, old_w)
     new_h, new_w = tf.multiply(old_h, ratio), tf.multiply(old_w,ratio)
     new_h, new_w = tf.cast(new_h, tf.int32), tf.cast(new_w, tf.int32)
@@ -34,7 +36,9 @@ def resize_tf(arr, IMAGE_SIZE=224):
     arr_rsz = tf.image.resize_images(arr, (new_h, new_w),
                                         align_corners=True)
     arr_rsz = tf.cast(arr_rsz, tf.uint8)
-    padded = tf.pad(arr_rsz, tf.Variable([[pad_top, pad_bottom],[0,0],[0,0]]))
+    padded = tf.pad(arr_rsz, tf.Variable([[0,0],[0,0],
+                                            [pad_top, pad_bottom],
+                                            [0,0],[0,0]]))
     padded = tf.cast(padded, tf.uint8)
     return padded
 
@@ -128,8 +132,20 @@ def get_video_capture(video_path, starting_frame):
     cap.set(1,starting_frame)
     return cap
 
+def resize_frame(frame, IMAGE_SIZE=224):
+    old_h, old_w = frame.shape[0], frame.shape[1]
+    ratio = float(IMAGE_SIZE)/old_w
+    new_h, new_w = int(old_h*ratio), int(old_w*ratio)
+    frame = cv2.resize(frame, (int(new_w), int(new_h)))
+    pad_h = IMAGE_SIZE - new_h
+    pad_bottom, pad_top = pad_h // 2, pad_h - (pad_h // 2)
+    frame = cv2.copyMakeBorder(frame,int(pad_top),int(pad_bottom),0,0,
+                                cv2.BORDER_CONSTANT,value=0)
+    return frame
+
 def get_video_chunk_cv2(video_path, starting_frame,
-                          n_frames, normalize=False,
+                          n_frames, IMAGE_SIZE=224,
+                          normalize=False,
                           dtype=np.uint8):
     """Fuction to read a video, convert all read
         frames into an array, normalize and return
@@ -157,6 +173,7 @@ def get_video_chunk_cv2(video_path, starting_frame,
         ret, frame = cap.read()
         if ret:
             frameCount += 1
+            frame = resize_frame(frame, IMAGE_SIZE)
             frame = frame.astype(dtype)
             vid.append(frame)
             if frameCount == n_frames:

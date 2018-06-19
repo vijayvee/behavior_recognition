@@ -2,22 +2,11 @@
 
 ## Overview
 
-This repository contains trained models reported in the paper "[Quo Vadis,
+For this project, I am building an end-to-end trainable behavior recognition system for mice using deep convolutional networks. These networks are inspired from Inception-3d, the current state-of-the-art in video action recognition. Please find detailed information about this architecture in the paper "[Quo Vadis,
 Action Recognition? A New Model and the Kinetics
 Dataset](https://arxiv.org/abs/1705.07750)" by Joao Carreira and Andrew
-Zisserman. The paper was posted on arXiv in May 2017, and will be published as a
+Zisserman. The paper was posted on arXiv in May 2017, and was published as a
 CVPR 2017 conference paper.
-
-"Quo Vadis" introduced a new architecture for video classification, the Inflated
-3D Convnet or I3D. Here we release Inception-v1 I3D models trained on the
-[Kinetics dataset](www.deepmind.com/kinetics) training split.
-
-In our paper, we reported state-of-the-art results on the UCF101 and HMDB51
-datasets from fine-tuning these models. I3D models pre-trained on Kinetics also
-placed first in the CVPR 2017 [Charades
-challenge](http://vuchallenge.org/charades.html).
-
-Disclaimer: This is not an official Google product.
 
 ## Running the code
 
@@ -28,7 +17,7 @@ Sonnet](https://github.com/deepmind/sonnet).
 
 Then, clone this repository using
 
-`$ git clone https://github.com/deepmind/kinetics-i3d`
+`$ git clone https://github.com/vijayvee/behavior-recognition`
 
 ### Sample code
 
@@ -41,37 +30,6 @@ checkpoints into the TensorFlow session, and then passes an example video
 through the model. The example video has been preprocessed, with RGB and Flow
 NumPy arrays provided (see more details below).
 
-The script outputs the norm of the logits tensor, as well as the top 20 Kinetics
-classes predicted by the model with their probability and logit values. Using
-the default flags, the output should resemble the following up to differences in
-numerical precision:
-
-```
-Norm of logits: 138.468643
-
-Top classes and probabilities
-1.0 41.8137 playing cricket
-1.49716e-09 21.494 hurling (sport)
-3.84312e-10 20.1341 catching or throwing baseball
-1.54923e-10 19.2256 catching or throwing softball
-1.13602e-10 18.9154 hitting baseball
-8.80112e-11 18.6601 playing tennis
-2.44157e-11 17.3779 playing kickball
-1.15319e-11 16.6278 playing squash or racquetball
-6.13194e-12 15.9962 shooting goal (soccer)
-4.39177e-12 15.6624 hammer throw
-2.21341e-12 14.9772 golf putting
-1.63072e-12 14.6717 throwing discus
-1.54564e-12 14.6181 javelin throw
-7.66915e-13 13.9173 pumping fist
-5.19298e-13 13.5274 shot put
-4.26817e-13 13.3313 celebrating
-2.72057e-13 12.8809 applauding
-1.8357e-13 12.4875 throwing ball
-1.61348e-13 12.3585 dodgeball
-1.13884e-13 12.0101 tap dancing
-```
-
 ### Running the test
 
 The test file can be run using
@@ -83,6 +41,8 @@ This checks that the model can be built correctly and produces correct shapes.
 ## Further details
 
 ### Provided checkpoints
+
+----- Replace all this with behavior checkpoints -----
 
 The default model has been pre-trained on ImageNet and then Kinetics; other
 flags allow for loading a model pre-trained only on Kinetics and for selecting
@@ -184,12 +144,3 @@ dataset](https://arxiv.org/abs/1705.06950) and the original [Inception
 paper](https://arxiv.org/abs/1409.4842) on which this architecture and code is
 based.
 
-### Questions and contributions
-
-To contribute to this repository, you will first need to sign the Google
-Contributor License Agreement (CLA), provided in the CONTRIBUTING.md file. We
-will then be able to accept any pull requests, though are not currently aiming
-to expand to other trained models.
-
-For any questions, you can contact the authors of the "Quo Vadis" paper, whose
-emails are listed in the paper.

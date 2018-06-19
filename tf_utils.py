@@ -83,9 +83,10 @@ def get_preds_loss(ground_truth, input_mode='rgb',
     input_fr_rgb = tf.placeholder(tf.float32,
                                     shape=[batch_size,
                                            n_frames,
-                                           _IMAGE_SIZE, _IMAGE_SIZE,
+                                           _IMAGE_SIZE, 
+                                           _IMAGE_SIZE, 
                                            3],
-                                    name='Input_Video_Placeholder')
+                                    name='Input_480_640')
     with tf.variable_scope('RGB'):
         #Building I3D for RGB-only input
         rgb_model = i3d.InceptionI3d(spatial_squeeze=True,

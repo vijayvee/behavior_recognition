@@ -98,6 +98,7 @@ def get_video_chunks(batch_video_inds,
         curr_chunk, _ = get_video_chunk_cv2(video_path,
                                          starting_frame,
                                          n_frames,
+                                         IMAGE_SIZE=224,
                                          normalize=False,
                                          dtype=np.uint8)
         if type(curr_chunk) == int:
@@ -126,6 +127,7 @@ def fetch_balanced_batch(behav2video,
     video_chunks, behaviors = get_video_chunks(batch_video_inds,
                                      behaviors,
                                      n_frames=n_frames)
+    behaviors = [L_POSSIBLE_BEHAVIORS.index(b) for b in behaviors]
     return video_chunks, behaviors
 
 def main():

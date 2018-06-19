@@ -4,6 +4,7 @@
 import numpy as np
 import tensorflow as tf
 from video_utils import *
+from utils import *
 import i3d
 import pickle
 from tqdm import tqdm
@@ -101,16 +102,14 @@ def train_batch_videos(n_train_batches, n_epochs,
         init_op = tf.group(tf.global_variables_initializer(),
                             tf.local_variables_initializer())
         sess.run(init_op)
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord,sess=sess)
         if input_mode=='rgb':
             n_iters = int((n_epochs*n_train_batches))
             saver.restore(sess, _CHECKPOINT_PATHS['rgb'])
             for i in tqdm(range(0,n_iters),desc='Training I3D on Kinetics train set...'):
                 # video_frames_rgb, gt_actions = sess.run([videos,labels])
-                import ipdb; ipdb.set_trace()
                 video_frames_rgb, gt_actions = fetch_balanced_batch(behav2video)
-                video_frames_rgb = resize_tf(video_frames_rgb, IMAGE_SIZE=224)
+                video_frames_rgb = video_frames_rgb.astype(np.float32)
+                gt_actions = np.array(gt_actions)
                 if i==0:
                     print "Obtained frames and actions", \
                             video_frames_rgb.shape, gt_actions.shape
@@ -135,7 +134,7 @@ def train_batch_videos(n_train_batches, n_epochs,
                     curr_time = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
                     saver_mice.save(sess,
                             './ckpt_dir/Mice_ACBM_FineTune_I3D_%s_%s_%s_%s_%s.ckpt'%(
-                                        learning_rate,optim_key,
+                                        learning_rate,'Adam',
                                         n_epochs,str(i),curr_time))
     print "Training completed with best accuracy: {}".format(best_val_accuracy)
     return best_val_accuracy
