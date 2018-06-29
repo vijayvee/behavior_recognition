@@ -119,12 +119,13 @@ def train_batch_videos(n_train_batches, n_epochs,
 if __name__=="__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
     print "Working on GPU %s"%(os.environ["CUDA_VISIBLE_DEVICES"])
+    batch_size = 16
     n_batches = compute_n_batch(H5_ROOT,
-                                  6,
+                                  batch_size,
                                   ratio=1.0)
     train_batch_videos(n_train_batches=n_batches,
                         n_epochs=10,# video2label=video2label,
                         tfrecords_filename=sys.argv[2],
-                        batch_size=6,
+                        batch_size=batch_size,
                         #val_tfrecords=None,
                         learning_rate=1e-4)

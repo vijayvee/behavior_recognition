@@ -39,17 +39,17 @@ def get_video_label_tfrecords(filename_queue,batch_size,
     video_dec = tf.decode_raw(features['{}/video'.format(subset)],tf.uint8)
     mask = tf.cast(features['{}/mask'.format(subset)], tf.int32)
     #Reshape video data into the original shape
-    video = tf.reshape(video_dec, [16, 224, 224, 3])
+    video = tf.reshape(video_dec, [batch_size, 224, 224, 3])
     # Creates batches by randomly shuffling tensors
     if shuffle:
         videos, labels, masks = tf.train.shuffle_batch([video, label, mask], seed=1234,
-                                                  batch_size=16,
+                                                  batch_size=batch_size,
                                                   capacity=30,
                                                   num_threads=10,
                                                   min_after_dequeue=16)
         return videos,labels, masks
     videos, labels, masks = tf.train.batch([video, label, mask],
-                                      batch_size=16,
+                                      batch_size=batch_size,
                                       capacity=30,
                                       num_threads=10)
     return videos, labels, masks
