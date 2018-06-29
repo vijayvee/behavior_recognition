@@ -56,7 +56,7 @@ def write_tfrecords(subset='train',
                                         )
     behav2video = pickle.load(open(b2v_pickle))
     ########## Start writing tfrecords ##########
-    for i in tqdm(range(n_batches),
+    for ii in tqdm(range(n_batches),
                     desc='Writing tf records..'):
         # Load the video
         video_chunks, labels = fetch_balanced_batch(behav2video)
@@ -71,6 +71,7 @@ def write_tfrecords(subset='train',
             ########## Create tfrecord features ##########
             X = video_chunks[i,:,:,:,:]
             y = labels_int[i]
+            import ipdb; ipdb.set_trace()
             #Check if video is valid and not all-zero
             mask = int(X.sum()>0)
             feature = {'%s/label'%(subset):
@@ -90,7 +91,7 @@ def write_tfrecords(subset='train',
                 writer.write(example.SerializeToString())
             else:
                 print "Example is None"
-        if i%500==0:
+        if ii%500==0:
             sys.stdout.flush()
     writer.close()
     sys.stdout.flush()

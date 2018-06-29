@@ -26,9 +26,11 @@ _SAMPLE_PATHS = {
     'rgb': 'data/v_CricketShot_g04_c01_rgb.npy',
     'flow': 'data/v_CricketShot_g04_c01_flow.npy',
 }
-
+_CHECKPOINT_DIRS = {
+        'mice': 'ckpt_dir/Mice_ACBM_I3D_0.0001_adam_10_19000_2018_02_19_01_27_30.ckpt'
+        }
 _CHECKPOINT_PATHS = {
-    'mice': 'ckpt_dir/Mice_ACBM_I3D_0.0001_adam_10_12000_2018_03_09_19_53_57.ckpt.meta',
+    'mice': 'ckpt_dir/Mice_ACBM_I3D_0.0001_adam_10_19000_2018_02_19_01_27_30.ckpt.meta',
     'rgb': 'data/checkpoints/rgb_scratch/model.ckpt',
     'flow': 'data/checkpoints/flow_scratch/model.ckpt',
     'rgb_imagenet': 'data/checkpoints/rgb_imagenet/model.ckpt',
@@ -103,9 +105,12 @@ def train_batch_videos(n_train_batches, n_epochs,
         init_op = tf.group(tf.global_variables_initializer(),
                             tf.local_variables_initializer())
         sess.run(init_op)
+        import ipdb; ipdb.set_trace()
         if input_mode=='rgb':
             n_iters = int((n_epochs*n_train_batches))
-            saver.restore(sess, _CHECKPOINT_PATHS['rgb'])
+            #saver.restore(sess, _CHECKPOINT_PATHS['rgb'])
+            saver = tf.train.import_meta_graph(_CHECKPOINT_PATHS['mice'])
+            saver.restore(sess, _CHECKPOINT_DIRS['mice'])
             for i in tqdm(range(0,n_iters),desc='Training I3D on Kinetics train set...'):
                 # video_frames_rgb, gt_actions = sess.run([videos,labels])
                 video_frames_rgb, gt_actions = fetch_balanced_batch(behav2video,
