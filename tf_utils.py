@@ -131,10 +131,16 @@ def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
         loss, input placeholder and saver object
         :param ground_truth: Tensor to hold ground truth
         :param input_mode: One of 'rgb','flow','two_stream'"""
+    print "Building I3d model"
     rgb_variable_map = {}
     #Inception was trained on videos in range [-1,1]
-    input_fr_rgb = tf.subtract(tf.divide(input_fr_rgb_unnorm,127.5),
-                                tf.constant(1.,dtype=tf.float32))
+    input_fr_rgb_unnorm_float = tf.cast(input_fr_rgb_unnorm, tf.float32)
+    input_fr_rgb = tf.subtract(tf.divide(
+                                        input_fr_rgb_unnorm_float,
+                                        tf.constant(127.5,dtype=tf.float32)
+                                        ),
+                                tf.constant(1.,dtype=tf.float32)
+                              )
     with tf.variable_scope('RGB'):
         #Building I3D for RGB-only input
         rgb_model = i3d.InceptionI3d(spatial_squeeze=True,
@@ -167,7 +173,8 @@ def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
     top_classes = tf.argmax(model_predictions,axis=1)
     loss = get_loss(model_predictions, ground_truth)
     return_vals = [model_predictions, loss, top_classes,
-                    input_fr_rgb_unnorm, input_fr_rgb, rgb_saver]
+                    input_fr_rgb_unnorm, input_fr_rgb, 
+                    ground_truth, rgb_saver]
     return return_vals
 
 
