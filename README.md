@@ -6,18 +6,24 @@ For this project, I am building an end-to-end trainable behavior recognition sys
 Action Recognition? A New Model and the Kinetics
 Dataset](https://arxiv.org/abs/1705.07750)" by Joao Carreira and Andrew
 Zisserman. The paper was posted on arXiv in May 2017, and was published as a
-CVPR 2017 conference paper.
+CVPR 2017 conference paper. Below is an architecture diagram of Inception-3D.
+
+![Alt text](data/architecture.png)
 
 ## Running the code
 
 ### Setup
 
-First follow the instructions for [installing
+1. Follow the instructions for [installing
 Sonnet](https://github.com/deepmind/sonnet).
 
-Then, clone this repository using
+2. clone this repository using
 
-`$ git clone https://github.com/vijayvee/behavior-recognition`
+`$ git clone https://github.com/vijayvee/behavior_recognition`
+
+3. Add the cloned repository's parent path to $PYTHONPATH as follows
+
+`cd <parent_dir>/behavior_recognition; export PYTHONPATH=$PYTHONPATH:<parent_dir>`
 
 ### Sample code
 
