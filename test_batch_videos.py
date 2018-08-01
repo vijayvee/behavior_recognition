@@ -1,127 +1,136 @@
 #!/usr/bin/python
-"""Evalutation script for testing the trained action recognition models on batches of videos"""
+"""Script to train videos in batches"""
 
 import numpy as np
 import tensorflow as tf
-from video_utils import *
 import i3d
-from video_utils import *
+import pickle
 from tqdm import tqdm
 import os
 import sys
-import pickle
-from tfrecord_reader import get_video_label_tfrecords
+from time import gmtime, strftime
+import time
+import random
+from behavior_recognition.data_io.tfrecord_reader import get_video_label_tfrecords
+from behavior_recognition.data_io.fetch_balanced_batch import *
+from behavior_recognition.tools.tf_utils import *
+from behavior_recognition.tools.video_utils import *
+from behavior_recognition.tools.utils import *
 
 _IMAGE_SIZE = 224
 _NUM_CLASSES = 9
 
-_SAMPLE_VIDEO_FRAMES = 16
+H5_ROOT = '/media/data_cifs/mice/mice_data_2018/labels'
+_SAMPLE_VIDEO_FRAMES = 6
 _SAMPLE_PATHS = {
     'rgb': 'data/v_CricketShot_g04_c01_rgb.npy',
     'flow': 'data/v_CricketShot_g04_c01_flow.npy',
 }
-
+_CHECKPOINT_DIRS = {
+        'mice': 'ckpt_dir/'
+        }
 _CHECKPOINT_PATHS = {
-    'mice': 'ckpt_dir/Mice_ACBM_I3D_0.0001_adam_10_12000_2018_03_09_19_53_57.ckpt',
+    'mice': 'ckpt_dir/Mice_ACBM_FineTune_I3D_Tfrecords_0.0001_Adam_10_85000_2018_06_30_07_20_32.ckpt.meta',
     'rgb': 'data/checkpoints/rgb_scratch/model.ckpt',
     'flow': 'data/checkpoints/flow_scratch/model.ckpt',
     'rgb_imagenet': 'data/checkpoints/rgb_imagenet/model.ckpt',
     'flow_imagenet': 'data/checkpoints/flow_imagenet/model.ckpt',
 }
-data_root = '/media/data_cifs/mice/mice_data_2018'
-_LABEL_MAP_PATH = 'data/label_map.txt'
-CLASSES_KIN = [x.strip() for x in open(_LABEL_MAP_PATH)]
 
-def get_lists(subset,ratio):
-    labels = '{}/{}_labels_norest.pkl'.format(data_root,subset)
-    videos = '{}/{}_labels_norest.pkl'.format(data_root,subset)
-    ind_s, ind_e = 0, int(len(videos)*ratio)
-    subset_labels = pickle.load(open(labels))[ind_s:ind_e]
-    subset_videos = pickle.load(open(videos))[ind_s:ind_e]
-    return subset_videos, subset_labels
+CLASSES_MICE = ["drink", "eat", "groom", "hang", "sniff", "rear", "rest", "walk", "eathand"]
 
-def get_preds_tensor(input_mode='rgb',n_frames=16, batch_size=10):
-    """Function to get the predictions tensor, input placeholder and saver object
-        :param input_mode: One of 'rgb','flow','two_stream'"""
-    if input_mode == 'rgb':
-        rgb_variable_map = {}
-        input_fr_rgb = tf.placeholder(tf.float32,
-                                      shape=[batch_size,
-                                             n_frames,
-                                             _IMAGE_SIZE, _IMAGE_SIZE,
-                                             3],
-                                      name="Input_Video_Placeholder")
-        with tf.variable_scope('RGB'):
-            #Building I3D for RGB-only input
-            rgb_model = i3d.InceptionI3d(_NUM_CLASSES,
-                                          spatial_squeeze=True,
-                                          final_endpoint='Logits')
-
-            rgb_logits,_ = rgb_model(input_fr_rgb,
-                                      is_training=False,
-                                      dropout_keep_prob=1.0)
-
-        print len(tf.global_variables())
-        for variable in tf.global_variables():
-            if variable.name.split('/')[0] == 'RGB':
-                rgb_variable_map[variable.name.replace(':0','')] = variable
-        print len(rgb_variable_map)
-        rgb_saver = tf.train.Saver(var_list = rgb_variable_map,
-                                    reshape=True)
-        model_predictions = tf.nn.softmax(rgb_logits)
-        top_classes = tf.argmax(model_predictions,axis=1)
-        return top_classes,model_predictions, \
-                input_fr_rgb, rgb_saver
-
-def evaluate_model(n_val_samples,video2label,input_mode='rgb',n_frames=16,batch_size=10):
-    """Function to run evaluation of an action recognition model on val split
+def train_batch_videos(n_train_batches, n_epochs,
+                        input_mode='rgb', save_every=5000,
+                        tfrecords_filename=None,print_every=10,
+                        action_every=50, num_classes=9,
+                        n_frames=16, batch_size=10,
+                        early_stopping=5,learning_rate=1e-4):
+    #TODO: Implement validation
+    """Function to train videos in batches.
+        :param n_train_batches: Number of training batches in one epoch
+        :param n_epochs: Number of epochs to train the model
+        :param val_accuracy_iter: Interval for checking validation accuracy
+        :param video2label: Dictionary mapping video ids to action labels
         :param input_mode: One of 'rgb','flow','two_stream'
+        :param save_every: Save checkpoint of weights every save_every iterations
+        :param print_every: Print loss log every print_every iterations
+        :param action_every: Print action predictions with their respective
+                             ground truth every action_every iterations
+        :param num_classes: Number of action classes
         :param n_frames: Number of frames to represent a video
-        :param batch_size: Batch size for validation
-        :param n_val_samples: Number of samples for validation"""
-        #TODO: Implement precision, recall, conf matrix, F1-score
-
-    n_tp,n_fn,n_fp = 0,0,0
-
-    correct_preds = 0
-    top_classes,predictions,input_video_ph,rgb_saver = get_preds_tensor(input_mode,
-                                                                          n_frames,
-                                                                          batch_size)
-    with tf.Session() as sess:
-        tfrecords_filename = './data/train_0_3_flush_shuffled_norest_f32_mixed_mice.tfrecords'
+        :param batch_size: Batch size for training"""
+    correct_preds = 0.
+    preds_labels_cnf = []
+    #saver_mice = tf.train.Saver()
+    #step = get_optimizer(loss,optim_key='adam',learning_rate=learning_rate)
+    with tf.Session().as_default() as sess:
         filename_queue = tf.train.string_input_producer([tfrecords_filename],
-                                                          num_epochs=None)
-        videos,labels = get_video_label_tfrecords(filename_queue,
-                                                    10,'train')
-        rgb_saver.restore(sess, _CHECKPOINT_PATHS['mice'])
-        print "After restore: %s"%(np.mean(
-                                    sess.run(
-                                      tf.trainable_variables()[0])))
+                                                                  num_epochs=1)
+        videos,labels,masks = get_video_label_tfrecords(filename_queue,batch_size,
+                                                    subset='train',shuffle=False)
+        one_hot = tf.one_hot(labels, depth=num_classes, dtype=tf.int32)
+        predictions,loss,top_classes,input_video_ph,input_video_ph_norm,ground_truth,saver = get_preds_loss_tfrecords(ground_truth=one_hot,
+                                                                                                input_fr_rgb_unnorm=videos,
+                                                                                                input_mode=input_mode,
+                                                                                                n_frames=n_frames,
+                                                                                                batch_size=batch_size,
+                                                                                                dropout_keep_prob=1.0)
+        labels_tf = tf.argmax(ground_truth, axis=1)
+        init_op = tf.group(tf.global_variables_initializer(),
+                tf.local_variables_initializer())
+        saver_mice = tf.train.Saver()
+        sess.run(init_op)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord,sess=sess)
         if input_mode=='rgb':
-            n_iters = n_val_samples*100/batch_size
-            for i in tqdm(range(0,n_iters),
-                            desc='Evaluating Kinetics on val set...'):
-                video_frames_rgb, gt_actions = sess.run([videos,labels])
-                video_frames_rgb = video_frames_rgb.astype(np.float32)
-                top_class_batch = sess.run([top_classes],
-                                            feed_dict = {input_video_ph:
-                                                            video_frames_rgb})
-                print_preds_labels(top_class_batch[0],gt_actions)
-                correct_preds += list(top_class_batch[0]==gt_actions).count(True)
-                print list(top_class_batch[0]==gt_actions).count(True), "correct predictions"
-    classification_accuracy = round(float(correct_preds)*100/n_val_samples,3)
-    return classification_accuracy
-
-def main():
-    os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
-    print "Working on GPU %s"%(os.environ["CUDA_VISIBLE_DEVICES"])
-    videos, labels = get_lists('train',1)
-    n_val_samples = len(labels)
-    print "Evaluating on {} samples..".format(n_val_samples)
-    acc = evaluate_model(n_val_samples,video2label)
-    print '{}% accuracy on {} samples of val set'.format(acc, n_val_samples)
+            n_iters = int((n_epochs*n_train_batches))
+            saver = tf.train.import_meta_graph(_CHECKPOINT_PATHS['mice'])
+            saver.restore(sess, tf.train.latest_checkpoint(_CHECKPOINT_DIRS['mice']))
+            i=0
+            try:
+                while(True):
+                    start = time.time()
+                    curr_loss,top_class_batch,videos_batch,labels_batch,one_hot_batch= sess.run([loss,
+                                                                                   top_classes,
+                                                                                   input_video_ph,
+                                                                                   labels_tf,
+                                                                                   ground_truth,
+                                                                                   ])
+                    end = time.time()
+                    print 'Time elapsed: ',end - start
+                    start = end
+                    correct_preds += list(top_class_batch==labels_batch).count(True)
+                    text_preds = [L_POSSIBLE_BEHAVIORS[b] for b in top_class_batch]
+                    text_labels = [L_POSSIBLE_BEHAVIORS[b] for b in labels_batch]
+                    #play_minibatch(videos_batch, text_preds, text_labels)
+                    train_acc = round(correct_preds/float((i+1)*batch_size),3)
+                    if i%print_every==0:
+                        print 'Iteration-%s Current validation loss: %s Current validation accuracy: %s'%((i+1),
+                                                                                                    curr_loss,
+                                                                                                    train_acc)
+                    if i%action_every==0:
+                        print_preds_labels(top_class_batch, labels_batch)
+                    preds_labels_cnf.extend([(p,l) for p,l in zip(top_class_batch, labels_batch)])
+                    #if i and i%1000 == 0:
+                    #    pickle.dump(preds_labels_cnf, open('cnf/Latest_Preds_Labels_CNF_%s.p'%(i),'w'))
+                    #    preds_labels_cnf = []
+                    i += 1
+            except tf.errors.OutOfRangeError:
+                print "TfRecords weren't written beyond this point :( restart training from ckpt"
+            finally:
+                coord.request_stop()
+            coord.join(threads)
 
 if __name__=="__main__":
-    main()
+    os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[1]
+    print "Working on GPU %s"%(os.environ["CUDA_VISIBLE_DEVICES"])
+    batch_size = 16
+    n_batches = compute_n_batch(H5_ROOT,
+                                  batch_size,
+                                  ratio=0.25)
+    train_batch_videos(n_train_batches=n_batches,
+                        n_epochs=1,# video2label=video2label,
+                        tfrecords_filename=sys.argv[2],
+                        batch_size=batch_size,
+                        #val_tfrecords=None,
+                        learning_rate=1e-4)

@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import sys
 import os
-from video_utils import *
+from behavior_recognition.tools.video_utils import *
 from tqdm import tqdm
 
 CLASSES_MICE = ["drink", "eat", "groom", "hang", "sniff", "rear", "rest", "walk", "eathand"]
@@ -59,7 +59,7 @@ def test_tfrecord_read(tfrecords_filename):
         filename_queue = tf.train.string_input_producer([tfrecords_filename],
                                                           num_epochs=None)
         cont='y'
-        videos,labels, masks = get_video_label_tfrecords(filename_queue,1,
+        videos,labels, masks = get_video_label_tfrecords(filename_queue,16,
                                                     subset='train',
                                                     shuffle=False)
         init_op = tf.group(tf.global_variables_initializer(),

@@ -2,11 +2,10 @@
 """Bundling all tensorflow utilities in tf_utils.py"""
 import tensorflow as tf
 import pickle
-from video_utils import *
-import i3d
+from behavior_recognition.tools.video_utils import *
+from behavior_recognition import i3d
 import random
-from tfrecord_reader import get_video_label_tfrecords
-from test_batch_videos import evaluate_model
+from behavior_recognition.data_io.tfrecord_reader import get_video_label_tfrecords
 from time import gmtime, strftime
 
 _IMAGE_SIZE = 224

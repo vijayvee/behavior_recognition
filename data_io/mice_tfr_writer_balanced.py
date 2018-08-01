@@ -3,16 +3,17 @@ import glob
 import tensorflow as tf
 import numpy as np
 import sys
-from utils import *
+from behavior_recognition.tools.utils import *
 import os
 from tqdm import tqdm
-from tf_utils import *
-from tf_utils import _int64_feature, _bytes_feature
-from fetch_balanced_batch import *
+from behavior_recognition.paths import *
+from behavior_recognition.tools.tf_utils import *
+from behavior_recognition.tools.tf_utils import _int64_feature, _bytes_feature
+from behavior_recognition.data_io.fetch_balanced_batch import *
 import h5py
 from time import gmtime, strftime
 
-H5_ROOT = '/media/data_cifs/mice/mice_data_2018/labels'
+H5_ROOT = label_root #'/media/data_cifs/mice/mice_data_2018/labels'
 DATASET_NAME = sys.argv[1]
 SUBSET = sys.argv[2]
 OUTPUT_PATH = sys.argv[3]
@@ -50,7 +51,8 @@ def write_tfrecords(subset='train',
                                   ratio)
     #Dictionary mapping behavior to videos and
     #frame sequences in videos labeled as behavior
-    b2v_pickle = 'pickles/Behavior2Video_%s_%s.p'%(
+    b2v_pickle = '%s/Behavior2Video_%s_%s.p'%(
+                                        PICKLES_PATH,
                                         DATASET_NAME,
                                         subset
                                         )
@@ -59,7 +61,7 @@ def write_tfrecords(subset='train',
     for ii in tqdm(range(n_batches),
                     desc='Writing tf records..'):
         # Load the video
-        video_chunks, labels = fetch_balanced_batch(behav2video)
+        video_chunks, labels = fetch_balanced_batch(behav2video, batch_size=batch_size)
         labels = [L_POSSIBLE_BEHAVIORS[l] for l in labels]
         for behav in labels:
             counts[behav] += 1
@@ -71,7 +73,6 @@ def write_tfrecords(subset='train',
             ########## Create tfrecord features ##########
             X = video_chunks[i,:,:,:,:]
             y = labels_int[i]
-            import ipdb; ipdb.set_trace()
             #Check if video is valid and not all-zero
             mask = int(X.sum()>0)
             feature = {'%s/label'%(subset):
@@ -98,7 +99,8 @@ def write_tfrecords(subset='train',
 
 def main():
     write_tfrecords(subset=SUBSET,
-                      ratio=RATIO)
+                      ratio=RATIO,
+                      batch_size=8)
 
 if __name__=='__main__':
     #Usage: python mice_tfr_writer_balanced.py <DATASET_NAME> <SUBSET> <TFRECORD NAME>

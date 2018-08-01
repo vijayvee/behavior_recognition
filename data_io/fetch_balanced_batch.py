@@ -8,12 +8,12 @@ from random import shuffle, sample
 import tensorflow as tf
 import numpy as np
 import pickle
-from config import *
 import sys
 from random import sample
 from tqdm import tqdm
-from tf_utils import *
-from video_utils import *
+from behavior_recognition.tools.tf_utils import *
+from behavior_recognition.tools.video_utils import *
+from behavior_recognition.paths import *
 import os
 
 choice = np.random.choice
@@ -28,10 +28,6 @@ L_POSSIBLE_BEHAVIORS = ["drink",
                         "walk",
                         "eathand"]
 
-data_root = '/media/data_cifs/mice/mice_data_2018'
-video_root = '{}/videos'.format(data_root)
-label_root = '{}/labels'.format(data_root)
-
 def sample_behavior_batch(batch_size=16):
     '''Sample batch_size behaviors uniformly
        to prevent any kind of class imbalance
@@ -42,7 +38,7 @@ def sample_behavior_batch(batch_size=16):
 
 def get_video_chunk_inds(behaviors,
                           behav2video,
-                          n_unq_vids_per_batch=1):
+                          n_unq_vids_per_batch=18):
     '''Sample a set of video chunks randomly from
        behav2video using the array behaviors
        :param behaviors: batch_size number of

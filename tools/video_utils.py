@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 from random import sample
 import pandas as pd
+from behavior_recognition.paths import *
 import matplotlib.pyplot as plt
 import glob
 from time import sleep
@@ -19,10 +20,19 @@ NUM_CLASSES=400
 KINETICS_ROOT = '/media/data_cifs/cluster_projects/action_recognition/ActivityNet/Crawler/Kinetics'
 subset = 'train'
 VIDEOS_ROOT = KINETICS_ROOT + '/' + subset
-_LABEL_MAP_PATH = 'data/label_map.txt'
+_LABEL_MAP_PATH = '%s/data/label_map.txt'%(BEHAV_REC_ROOT)
 CLASSES_KIN = [x.strip() for x in open(_LABEL_MAP_PATH)]
 CLASSES_MICE = ["drink", "eat", "groom", "hang", "sniff", "rear", "rest", "walk", "eathand"]
 video2label = {}
+L_POSSIBLE_BEHAVIORS = ["drink",
+            "eat",
+            "groom",
+            "hang",
+            "sniff",
+            "rear",
+            "rest",
+            "walk",
+            "eathand"]
 
 def resize_tf(arr, IMAGE_SIZE=224):
     old_h, old_w = (tf.constant(arr.shape[2].value, dtype=tf.float32),
@@ -93,7 +103,7 @@ def invert_preprocessing(norm_frames, labels = [], display=False):
         plt.show()
     return curr_frames
 
-def play_minibatch(frames, labels = []):
+def play_minibatch(frames, labels = [], ground_truth = []):
     '''Function to play as video, a sequence
        of frames from a minibatch
        :param frames: Array of a minibatch
@@ -102,19 +112,28 @@ def play_minibatch(frames, labels = []):
        :param labels: If not empty, display
                       each behavior while
                       playing the video'''
+    if type(labels[0]) == int:
+        labels = [L_POSSIBLE_BEHAVIORS[b] for b in labels]
     for i in range(len(frames)):
         curr_vid = frames[i,:,:,:,:]
         im = curr_vid[0,:,:,:]
         print im.shape, im.dtype
         show = plt.imshow(im)
+        plt.title('I3D behavior prediction: %s; Ground truth label: %s'%(labels[i].upper(), 
+                                                                    ground_truth[i].upper()))
         if len(labels)>0:
             print labels[i]
         for ii in range(len(curr_vid)):
             im = curr_vid[ii,:,:,:]
+            #cv2.putText(im,labels[i], (100,15), 
+            #            cv2.FONT_HERSHEY_SIMPLEX, 
+            #            0.5, (0,255,255),2)
             show.set_data(im)
+            plt.savefig('Behav_Pred_%s.png'%(i*len(curr_vid) + ii))
             plt.pause(1./60)
-        plt.pause(1./10)
-    plt.show()
+            plt.pause(1./10)
+    print "Stored images"
+#    plt.show()
 
 
 def get_video_capture(video_path, starting_frame):
