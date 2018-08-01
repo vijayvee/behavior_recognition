@@ -119,14 +119,14 @@ def play_minibatch(frames, labels = [], ground_truth = []):
         im = curr_vid[0,:,:,:]
         print im.shape, im.dtype
         show = plt.imshow(im)
-        plt.title('I3D behavior prediction: %s; Ground truth label: %s'%(labels[i].upper(), 
+        plt.title('I3D behavior prediction: %s; Ground truth label: %s'%(labels[i].upper(),
                                                                     ground_truth[i].upper()))
         if len(labels)>0:
             print labels[i]
         for ii in range(len(curr_vid)):
             im = curr_vid[ii,:,:,:]
-            #cv2.putText(im,labels[i], (100,15), 
-            #            cv2.FONT_HERSHEY_SIMPLEX, 
+            #cv2.putText(im,labels[i], (100,15),
+            #            cv2.FONT_HERSHEY_SIMPLEX,
             #            0.5, (0,255,255),2)
             show.set_data(im)
             plt.savefig('Behav_Pred_%s.png'%(i*len(curr_vid) + ii))
