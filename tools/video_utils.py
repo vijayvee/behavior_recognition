@@ -350,3 +350,9 @@ def get_video_batch(video2label,batch_size=BATCH_SIZE,
         if class_index:
             curr_labels = [CLASSES_KIN.index(action) for action in curr_labels]
         return np.array(video_rgb_frames),np.array(curr_labels)
+
+def pack_frames(frames, n_frames, batch_size):
+    batch = np.zeros((batch_size, n_frames, 224,224,3))
+    for ii in range(batch_size):
+        batch[ii,:,:,:,:] = frames[ii:ii+n_frames,:,:,:]
+    return batch

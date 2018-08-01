@@ -176,7 +176,7 @@ def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
                     ground_truth, rgb_saver]
     return return_vals
 
-def get_preds_loss_inference(input_fr_rgb_unnorm,
+def get_preds_loss_inference(input_fr_rgb_unnorm, num_classes=9,
                             input_mode='rgb', n_frames=16,
                             batch_size=10,dropout_keep_prob=1.0):
     """Function to get the top_classes tensor for ingerence.

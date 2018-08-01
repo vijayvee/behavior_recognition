@@ -98,7 +98,6 @@ def train_batch_videos(n_train_batches, n_epochs,
                                                                                    ])
                     end = time.time()
                     print 'Time elapsed: ',end - start
-                    start = end
                     correct_preds += list(top_class_batch==labels_batch).count(True)
                     text_preds = [L_POSSIBLE_BEHAVIORS[b] for b in top_class_batch]
                     text_labels = [L_POSSIBLE_BEHAVIORS[b] for b in labels_batch]
