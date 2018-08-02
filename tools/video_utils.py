@@ -5,7 +5,7 @@ import cv2
 from random import sample
 import pandas as pd
 from behavior_recognition.paths import *
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import glob
 from time import sleep
 import tensorflow as tf

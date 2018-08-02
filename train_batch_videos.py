@@ -3,7 +3,7 @@
 
 import numpy as np
 import tensorflow as tf
-import i3d
+import i3d_unfreeze as i3d
 import pickle
 from tqdm import tqdm
 import os
@@ -11,6 +11,7 @@ import time
 import sys
 import random
 from time import gmtime, strftime
+from behavior_recognition.paths import *
 from behavior_recognition.data_io.tfrecord_reader import get_video_label_tfrecords
 from behavior_recognition.data_io.fetch_balanced_batch import *
 from behavior_recognition.tools.tf_utils import *
@@ -19,27 +20,11 @@ from behavior_recognition.tools.utils import *
 
 _IMAGE_SIZE = 224
 _NUM_CLASSES = 9
+CLASSES_MICE = ["drink", "eat", "groom", "hang",
+                "sniff", "rear", "rest", "walk",
+                "eathand"]
 
-H5_ROOT = '/media/data_cifs/mice/mice_data_2018/labels'
-_SAMPLE_VIDEO_FRAMES = 6
-_SAMPLE_PATHS = {
-    'rgb': 'data/v_CricketShot_g04_c01_rgb.npy',
-    'flow': 'data/v_CricketShot_g04_c01_flow.npy',
-}
-_CHECKPOINT_DIRS = {
-        'mice': 'ckpt_dir/'
-        }
-_CHECKPOINT_PATHS = {
-    'mice': 'ckpt_dir/Mice_ACBM_FineTune_I3D_Tfrecords_0.0001_Adam_10_85000_2018_06_30_07_20_32.ckpt.meta',
-    'rgb': 'data/checkpoints/rgb_scratch/model.ckpt',
-    'flow': 'data/checkpoints/flow_scratch/model.ckpt',
-    'rgb_imagenet': 'data/checkpoints/rgb_imagenet/model.ckpt',
-    'flow_imagenet': 'data/checkpoints/flow_imagenet/model.ckpt',
-}
-
-CLASSES_MICE = ["drink", "eat", "groom", "hang", "sniff", "rear", "rest", "walk", "eathand"]
-
-def train_batch_videos(n_train_batches, n_epochs,
+def train_batch_videos(n_train_batches, n_epochs, expt_name,
                         input_mode='rgb', save_every=5000,
                         tfrecords_filename=None,print_every=10,
                         action_every=50, num_classes=9,
@@ -67,19 +52,18 @@ def train_batch_videos(n_train_batches, n_epochs,
                                                                   num_epochs=None)
         videos,labels,masks = get_video_label_tfrecords(filename_queue,batch_size,
                                                     subset='train',shuffle=True)
-#        init_op = tf.group(tf.global_variables_initializer(),
-#                            tf.local_variables_initializer())
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord,sess=sess)
         one_hot = tf.one_hot(labels, depth=num_classes, dtype=tf.int32)
-        predictions,loss,top_classes,input_video_ph,input_video_ph_norm,ground_truth,saver = get_preds_loss_tfrecords(
-                                                                                                ground_truth=one_hot,
-                                                                                                input_fr_rgb_unnorm=videos,
-                                                                                                input_mode=input_mode,
-                                                                                                n_frames=n_frames,
-                                                                                                batch_size=batch_size,
-                                                                                                dropout_keep_prob=0.8
-                                                                                                )
+        predictions,loss,top_classes,\
+        input_video_ph,input_video_ph_norm,\
+        ground_truth,saver = get_preds_loss_tfrecords_unfreeze(ground_truth=one_hot,
+                                                        input_fr_rgb_unnorm=videos,
+                                                        input_mode=input_mode,
+                                                        n_frames=n_frames,
+                                                        batch_size=batch_size,
+                                                        dropout_keep_prob=0.8
+                                                        )
         labels_tf = tf.argmax(ground_truth, axis=1)
         step = get_optimizer(loss,optim_key='adam',learning_rate=learning_rate)
         init_op = tf.group(tf.global_variables_initializer(),
@@ -88,20 +72,20 @@ def train_batch_videos(n_train_batches, n_epochs,
         sess.run(init_op)
         if input_mode=='rgb':
             n_iters = int((n_epochs*n_train_batches))
-            #saver.restore(sess, _CHECKPOINT_PATHS['rgb'])
-            #import ipdb; ipdb.set_trace()
             saver = tf.train.import_meta_graph(_CHECKPOINT_PATHS['mice'])
             saver.restore(sess, tf.train.latest_checkpoint(_CHECKPOINT_DIRS['mice']))
             try:
                 start = time.time()
                 for i in tqdm(range(0,n_iters),desc='Training I3D on mice train set...'):
-                    curr_loss,top_class_batch,videos_batch,labels_batch,one_hot_batch,_= sess.run([loss,
-                                                                                   top_classes,
-                                                                                   input_video_ph,
-                                                                                   labels_tf,
-                                                                                   ground_truth,
-                                                                                   step
-                                                                                   ])
+                    curr_loss,top_class_batch,\
+                    videos_batch,labels_batch,\
+                    one_hot_batch,_= sess.run([loss,
+                                               top_classes,
+                                               input_video_ph,
+                                               labels_tf,
+                                               ground_truth,
+                                               step
+                                               ])
                     end = time.time()
                     print end - start, 'seconds per iter'
                     start = end
@@ -116,7 +100,8 @@ def train_batch_videos(n_train_batches, n_epochs,
                     if i%save_every==0:
                         curr_time = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
                         saver_mice.save(sess,
-                                './ckpt_dir/Mice_ACBM_FineTune_I3D_Tfrecords_%s_%s_%s_%s_%s.ckpt'%(
+                                './ckpt_dir/Mice_ACBM_FineTune_I3D_%s_%s_%s_%s_%s_%s.ckpt'%(
+                                            expt_name,
                                             learning_rate,'Adam',
                                             n_epochs,str(i),curr_time))
             except tf.errors.OutOfRangeError:
@@ -133,7 +118,7 @@ if __name__=="__main__":
                                   batch_size,
                                   ratio=1.0)
     train_batch_videos(n_train_batches=n_batches,
-                        n_epochs=10,# video2label=video2label,
+                        n_epochs=10, expt_name=sys.argv[3],
                         tfrecords_filename=sys.argv[2],
                         batch_size=batch_size,
                         #val_tfrecords=None,

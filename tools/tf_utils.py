@@ -4,6 +4,7 @@ import tensorflow as tf
 import pickle
 from behavior_recognition.tools.video_utils import *
 from behavior_recognition import i3d
+from behavior_recognition import i3d_unfreeze as i3d_uf
 import random
 from behavior_recognition.data_io.tfrecord_reader import get_video_label_tfrecords
 from time import gmtime, strftime
@@ -124,7 +125,9 @@ def get_preds_loss(ground_truth, input_mode='rgb',
 
 def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
                             input_mode='rgb', n_frames=16,
-                            num_classes=_NUM_CLASSES,batch_size=10,
+                            final_endpoint='Mixed_5c',
+                            num_classes=_NUM_CLASSES,
+                            batch_size=10,
                             dropout_keep_prob=0.6):
     """Function to get the predictions tensor,
         loss, input placeholder and saver object
@@ -143,7 +146,8 @@ def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
     with tf.variable_scope('RGB'):
         #Building I3D for RGB-only input
         rgb_model = i3d.InceptionI3d(spatial_squeeze=True,
-                                       final_endpoint='Mixed_5c')
+                                     final_endpoint=final_endpoint,
+                                     )
         rgb_mixed_5c,_ = rgb_model(input_fr_rgb,
                                      is_training=False,
                                      dropout_keep_prob=1.0)
@@ -156,8 +160,7 @@ def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
 
             net = tf.nn.dropout(net, dropout_keep_prob)
             logits = conv3d(name='Logits',input=net,
-                              shape=[1,1,1,1024,
-                              num_classes])
+                            shape=[1,1,1,1024,num_classes])
             logits = tf.squeeze(logits,
                                   [2, 3],
                                   name='SpatialSqueeze')
@@ -244,3 +247,63 @@ def get_optimizer(loss, optim_key='adam', learning_rate=1e-4, momentum=0.9):
                             )
     step = optim.minimize(loss)
     return step
+
+def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
+                            input_mode='rgb', n_frames=16,
+                            final_endpoint='Mixed_5c',
+                            freezer_endpoint='Mixed_5c',
+                            num_classes=_NUM_CLASSES,
+                            batch_size=10,
+                            dropout_keep_prob=0.6):
+    """Function to get the predictions tensor,
+        loss, input placeholder and saver object
+        :param ground_truth: Tensor to hold ground truth
+        :param input_mode: One of 'rgb','flow','two_stream'"""
+    print "Building I3d model"
+    rgb_variable_map = {}
+    #Inception was trained on videos in range [-1,1]
+    input_fr_rgb_unnorm_float = tf.cast(input_fr_rgb_unnorm, tf.float32)
+    input_fr_rgb = tf.subtract(tf.divide(
+                                        input_fr_rgb_unnorm_float,
+                                        tf.constant(127.5,dtype=tf.float32)
+                                        ),
+                                tf.constant(1.,dtype=tf.float32)
+                              )
+    with tf.variable_scope('RGB'):
+        #Building I3D for RGB-only input
+        rgb_model = i3d_uf.InceptionI3d(spatial_squeeze=True,
+                                     final_endpoint=final_endpoint,
+                                     )
+        #TODO: Add dropout for unfreezingsu
+        rgb_mixed_5c,_ = rgb_model(input_fr_rgb,
+                                     is_training=False,
+                                     freezer_endpoint=freezer_endpoint,
+                                     dropout_keep_prob=1.0
+                                     )
+
+        with tf.variable_scope('Logits_Mice'):
+            net = tf.nn.avg_pool3d(rgb_mixed_5c,
+                                    ksize=[1, 2, 7, 7, 1],
+                                    strides=[1, 1, 1, 1, 1],
+                                    padding='VALID')
+
+            net = tf.nn.dropout(net, dropout_keep_prob)
+            logits = conv3d(name='Logits',input=net,
+                            shape=[1,1,1,1024,num_classes])
+            logits = tf.squeeze(logits,
+                                  [2, 3],
+                                  name='SpatialSqueeze')
+            averaged_logits = tf.reduce_mean(logits, axis=1)
+
+    for variable in tf.global_variables():
+        if variable.name.split('/')[0] == 'RGB' and 'Logits' not in variable.name:
+            rgb_variable_map[variable.name.replace(':0','')] = variable
+    rgb_saver = tf.train.Saver(var_list = rgb_variable_map,
+                                reshape=True)
+    model_predictions = tf.nn.softmax(averaged_logits)
+    top_classes = tf.argmax(model_predictions,axis=1)
+    loss = get_loss(model_predictions, ground_truth)
+    return_vals = [model_predictions, loss, top_classes,
+                    input_fr_rgb_unnorm, input_fr_rgb,
+                    ground_truth, rgb_saver]
+    return return_vals
