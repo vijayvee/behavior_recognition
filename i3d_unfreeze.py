@@ -163,7 +163,7 @@ class InceptionI3d(snt.AbstractModule):
     """
     if self._final_endpoint not in self.VALID_ENDPOINTS:
       raise ValueError('Unknown final endpoint %s' % self._final_endpoint)
-
+    self.freezer_endpoint = freezer_endpoint
     net = inputs
     end_points = {}
     end_point = 'Conv3d_1a_7x7'

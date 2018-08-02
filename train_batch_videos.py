@@ -57,9 +57,10 @@ def train_batch_videos(n_train_batches, n_epochs, expt_name,
         one_hot = tf.one_hot(labels, depth=num_classes, dtype=tf.int32)
         predictions,loss,top_classes,\
         input_video_ph,input_video_ph_norm,\
-        ground_truth,saver = get_preds_loss_tfrecords_unfreeze(ground_truth=one_hot,
+        ground_truth,saver = get_preds_loss_tfrecords(ground_truth=one_hot,
                                                         input_fr_rgb_unnorm=videos,
                                                         input_mode=input_mode,
+                                                        #freezer_endpoint='Mixed_4e',
                                                         n_frames=n_frames,
                                                         batch_size=batch_size,
                                                         dropout_keep_prob=0.8
@@ -72,8 +73,8 @@ def train_batch_videos(n_train_batches, n_epochs, expt_name,
         sess.run(init_op)
         if input_mode=='rgb':
             n_iters = int((n_epochs*n_train_batches))
-            saver = tf.train.import_meta_graph(_CHECKPOINT_PATHS['mice'])
-            saver.restore(sess, tf.train.latest_checkpoint(_CHECKPOINT_DIRS['mice']))
+            saver = tf.train.import_meta_graph(CHECKPOINT_PATHS['mice'])
+            saver.restore(sess, CHECKPOINTS['mice'])
             try:
                 start = time.time()
                 for i in tqdm(range(0,n_iters),desc='Training I3D on mice train set...'):

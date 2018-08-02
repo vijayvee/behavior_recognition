@@ -149,8 +149,8 @@ def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
                                      final_endpoint=final_endpoint,
                                      )
         rgb_mixed_5c,_ = rgb_model(input_fr_rgb,
-                                     is_training=False,
-                                     dropout_keep_prob=1.0)
+                                     is_training=True,
+                                     dropout_keep_prob=dropout_keep_prob)
 
         with tf.variable_scope('Logits_Mice'):
             net = tf.nn.avg_pool3d(rgb_mixed_5c,
@@ -248,7 +248,7 @@ def get_optimizer(loss, optim_key='adam', learning_rate=1e-4, momentum=0.9):
     step = optim.minimize(loss)
     return step
 
-def get_preds_loss_tfrecords(ground_truth, input_fr_rgb_unnorm,
+def get_preds_loss_unfreeze(ground_truth, input_fr_rgb_unnorm,
                             input_mode='rgb', n_frames=16,
                             final_endpoint='Mixed_5c',
                             freezer_endpoint='Mixed_5c',

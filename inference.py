@@ -99,5 +99,4 @@ if __name__=="__main__":
     print "Working on GPU %s"%(os.environ["CUDA_VISIBLE_DEVICES"])
     batch_size = 16
     sample_video_path = sys.argv[2]
-    i3d_preds = infer_video(sample_video_path, VIDEO_LENGTH=1000)
-    import ipdb; ipdb.set_trace();
+    i3d_preds = infer_video(sample_video_path, VIDEO_LENGTH=100000)
