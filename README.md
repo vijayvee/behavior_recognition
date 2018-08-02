@@ -8,7 +8,7 @@ Dataset](https://arxiv.org/abs/1705.07750)" by Joao Carreira and Andrew
 Zisserman. The paper was posted on arXiv in May 2017, and was published as a
 CVPR 2017 conference paper. Below is an architecture diagram of Inception-3D.
 
-![Alt text](data/architecture.png)
+![Alt text](imgs/acbm.png)
 
 ## Running the code
 
