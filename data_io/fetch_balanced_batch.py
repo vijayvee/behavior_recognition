@@ -38,7 +38,8 @@ def sample_behavior_batch(batch_size=16):
 
 def get_video_chunk_inds(behaviors,
                           behav2video,
-                          n_unq_vids_per_batch=18):
+                          test=False,
+                          n_unq_vids_per_batch=1):
     '''Sample a set of video chunks randomly from
        behav2video using the array behaviors
        :param behaviors: batch_size number of
@@ -52,18 +53,20 @@ def get_video_chunk_inds(behaviors,
         :param n_unq_vids_per_batch: Number of unique
                                      videos to sample from
                                      for each batch'''
-    batch_video_inds = {}
+    batch_video_inds = []
     for behav in behaviors:
         videos_with_behav = behav2video[behav].keys()
         video_fn = choice(videos_with_behav,
                            n_unq_vids_per_batch)[0]
         #Force multiple chunks in a mini-batch to
         #be chosen from different videos
-        while batch_video_inds.has_key(video_fn):
-            video_fn = choice(videos_with_behav,
-                               n_unq_vids_per_batch)[0]
+        if not test:
+            while batch_video_inds.has_key(video_fn):
+                video_fn = choice(videos_with_behav,
+                                   n_unq_vids_per_batch)[0]
         curr_ind = choice(behav2video[behav][video_fn],1)
-        batch_video_inds[video_fn] = (behav, curr_ind)
+        #batch_video_inds[video_fn] = (behav, curr_ind)
+        batch_video_inds.append((video_fn,(behav, curr_ind)))
     return batch_video_inds
 
 def get_video_chunks(batch_video_inds,
@@ -82,7 +85,9 @@ def get_video_chunks(batch_video_inds,
     video_chunks = []
     behaviors_video = []
     prev_chunk = np.zeros(chunk_shape)
-    for video_fn, ind_tuple in batch_video_inds.iteritems():
+    #for video_fn, ind_tuple in batch_video_inds.iteritems():
+    for _tuple in batch_video_inds:
+        video_fn, ind_tuple = _tuple[0], _tuple[1]
         #Extracting correct behavior for a video sequence
         behav, frame_ind = ind_tuple[0], ind_tuple[1]
         video_path = '%s/%s'%(video_root, video_fn)
@@ -108,7 +113,8 @@ def get_video_chunks(batch_video_inds,
 
 def fetch_balanced_batch(behav2video,
                            batch_size=16,
-                           n_frames=16):
+                           n_frames=16,
+                           test=False):
     '''Wrapper to fetch a mini-batch of videos
        with balanced classes and videos sampled
        randomly per sample
@@ -119,7 +125,8 @@ def fetch_balanced_batch(behav2video,
 
     behaviors = sample_behavior_batch(batch_size)
     batch_video_inds = get_video_chunk_inds(behaviors,
-                                             behav2video)
+                                             behav2video,
+                                             test=test)
     video_chunks, behaviors = get_video_chunks(batch_video_inds,
                                      behaviors,
                                      n_frames=n_frames)
@@ -129,10 +136,10 @@ def fetch_balanced_batch(behav2video,
 def main():
     behav2video = pickle.load(
     #                        open('pickles/Behavior2Video_small.pvd_40.p'))
-                             open('pickles/Behavior2Video.p'))
-    import ipdb; ipdb.set_trace()
+                             open('../pickles/Behavior2Video_all_mice_test.p'))
     while(True):
-        video_chunks, behaviors = fetch_balanced_batch(behav2video)
+        video_chunks, behaviors = fetch_balanced_batch(behav2video, test=True)
+        import ipdb; ipdb.set_trace()
 
 if __name__=='__main__':
     main()

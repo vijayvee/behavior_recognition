@@ -26,8 +26,8 @@ _CHECKPOINT_PATHS = {
     'flow_imagenet': 'data/checkpoints/flow_imagenet/model.ckpt',
 }
 
-_LABEL_MAP_PATH = 'data/label_map.txt'
-CLASSES_KIN = [x.strip() for x in open(_LABEL_MAP_PATH)]
+#_LABEL_MAP_PATH = 'data/label_map.txt'
+#CLASSES_KIN = [x.strip() for x in open(_LABEL_MAP_PATH)]
 CLASSES_MICE = ["drink", "eat", "groom", "hang", "sniff",
                 "rear", "rest", "walk", "eathand"]
 

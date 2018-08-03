@@ -57,11 +57,15 @@ def write_tfrecords(subset='train',
                                         subset
                                         )
     behav2video = pickle.load(open(b2v_pickle))
+    print 'Loaded from %s'%(b2v_pickle)
     ########## Start writing tfrecords ##########
     for ii in tqdm(range(n_batches),
                     desc='Writing tf records..'):
         # Load the video
-        video_chunks, labels = fetch_balanced_batch(behav2video, batch_size=batch_size)
+        video_chunks, labels = fetch_balanced_batch(behav2video, 
+                                                    batch_size=batch_size,
+                                                    test=True,
+                                                    )
         labels = [L_POSSIBLE_BEHAVIORS[l] for l in labels]
         for behav in labels:
             counts[behav] += 1
@@ -100,7 +104,7 @@ def write_tfrecords(subset='train',
 def main():
     write_tfrecords(subset=SUBSET,
                       ratio=RATIO,
-                      batch_size=8)
+                      batch_size=16)
 
 if __name__=='__main__':
     #Usage: python mice_tfr_writer_balanced.py <DATASET_NAME> <SUBSET> <TFRECORD NAME>

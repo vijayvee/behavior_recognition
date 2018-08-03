@@ -84,18 +84,15 @@ def train_batch_videos(n_train_batches, n_epochs,
         threads = tf.train.start_queue_runners(coord=coord,sess=sess)
         if input_mode=='rgb':
             n_iters = int((n_epochs*n_train_batches))
-            saver = tf.train.import_meta_graph(_CHECKPOINT_PATHS['mice'])
-            saver.restore(sess, tf.train.latest_checkpoint(_CHECKPOINT_DIRS['mice']))
+            saver = tf.train.import_meta_graph(CHECKPOINT_PATHS['mice'])
+            saver.restore(sess, CHECKPOINTS['mice'])
             i=0
             try:
                 while(True):
                     start = time.time()
-                    curr_loss,top_class_batch,videos_batch,labels_batch,one_hot_batch= sess.run([loss,
-                                                                                   top_classes,
-                                                                                   input_video_ph,
-                                                                                   labels_tf,
-                                                                                   ground_truth,
-                                                                                   ])
+                    top_class_batch,labels_batch = sess.run([top_classes,
+                                                            labels_tf,
+                                                            ])
                     end = time.time()
                     print 'Time elapsed: ',end - start
                     correct_preds += list(top_class_batch==labels_batch).count(True)
@@ -104,15 +101,14 @@ def train_batch_videos(n_train_batches, n_epochs,
                     #play_minibatch(videos_batch, text_preds, text_labels)
                     train_acc = round(correct_preds/float((i+1)*batch_size),3)
                     if i%print_every==0:
-                        print 'Iteration-%s Current validation loss: %s Current validation accuracy: %s'%((i+1),
-                                                                                                    curr_loss,
-                                                                                                    train_acc)
+                        print 'Iteration-%s - Current validation accuracy: %s'%((i+1),
+                                                                            train_acc)
                     if i%action_every==0:
                         print_preds_labels(top_class_batch, labels_batch)
                     preds_labels_cnf.extend([(p,l) for p,l in zip(top_class_batch, labels_batch)])
-                    #if i and i%1000 == 0:
-                    #    pickle.dump(preds_labels_cnf, open('cnf/Latest_Preds_Labels_CNF_%s.p'%(i),'w'))
-                    #    preds_labels_cnf = []
+                    if i and i%1000 == 0:
+                        pickle.dump(preds_labels_cnf, open('cnf/Latest_93_Preds_Labels_CNF_%s.p'%(i),'w'))
+                        preds_labels_cnf = []
                     i += 1
             except tf.errors.OutOfRangeError:
                 print "TfRecords weren't written beyond this point :( restart training from ckpt"

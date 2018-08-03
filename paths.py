@@ -14,12 +14,12 @@ CHECKPOINT_DIRS = {
         'mice': 'ckpt_dir/'
         }
 CHECKPOINT_PATHS = {
-    'mice': 'ckpt_dir/Mice_ACBM_FineTune_I3D_Tfrecords_0.0001_Adam_10_85000_2018_06_30_07_20_32.ckpt.meta',
+    'mice': 'ckpt_dir/Mice_ACBM_FineTune_I3D_bn_debug_0.0001_Adam_10_85000_2018_08_02_22_41_14.ckpt.meta',
     'rgb': 'data/checkpoints/rgb_scratch/model.ckpt',
     'flow': 'data/checkpoints/flow_scratch/model.ckpt',
     'rgb_imagenet': 'data/checkpoints/rgb_imagenet/model.ckpt',
     'flow_imagenet': 'data/checkpoints/flow_imagenet/model.ckpt',
 }
 CHECKPOINTS = {
-    'mice': 'ckpt_dir/Mice_ACBM_FineTune_I3D_Tfrecords_0.0001_Adam_10_85000_2018_07_02_00_18_35.ckpt',
+    'mice': 'ckpt_dir/Mice_ACBM_FineTune_I3D_bn_debug_0.0001_Adam_10_85000_2018_08_02_22_41_14.ckpt',
     }
