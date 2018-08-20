@@ -27,10 +27,11 @@ Sonnet](https://github.com/deepmind/sonnet).
 
 ### Acknowledgments
 
-Brian Zhang, Joao Carreira, Viorica Patraucean, Diego de Las Casas, Chloe
-Hillier, and Andrew Zisserman helped to prepare this initial release. We would
-also like to thank the teams behind the [Kinetics
-dataset](https://arxiv.org/abs/1705.06950) and the original [Inception
-paper](https://arxiv.org/abs/1409.4842) on which this architecture and code is
-based.
+* The [Kinetics
+dataset](https://arxiv.org/abs/1705.06950)
+* [Inception
+v1](https://arxiv.org/abs/1409.4842) 
+* [Quo Vadis,
+Action Recognition? A New Model and the Kinetics
+Dataset](https://arxiv.org/abs/1705.07750)
 
